@@ -32,8 +32,6 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         input, select, textarea { font-size: 16px !important; }
-        
-        /* Custom Pomodoro Font styling */
         .font-mono-timer { font-variant-numeric: tabular-nums; letter-spacing: -0.05em; }
     </style>
 </head>
@@ -60,7 +58,8 @@
             download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>,
             upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>,
             settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
-            calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>
+            calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+            cloud: <><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></>
         };
 
         const GRADE_VALUES = { 'A': 4.0, 'B+': 3.5, 'B': 3.0, 'C+': 2.5, 'C': 2.0, 'D': 1.0, 'F': 0.0 };
@@ -79,14 +78,13 @@
           { id: 2, course: 'SOCIO 103.2', title: 'Modernity and Self-Identity (Giddens)', status: 'In Progress', module: 'Week 2' },
         ];
 
-        // Web Audio API Beep (No external files needed)
         const playBeep = () => {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
                 gain.gain.setValueAtTime(0.1, ctx.currentTime);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
@@ -113,33 +111,34 @@
         };
 
         function App() {
-          // --- STATES ---
           const [darkMode, setDarkMode] = useState(() => localStorage.getItem('alon_theme') === 'dark');
           const [activeTab, setActiveTab] = useState('dashboard');
           const [toast, setToast] = useState(null);
           
           const [courses, setCourses] = useState(() => { 
-              try { const s = localStorage.getItem('alon_courses_v6'); return s ? JSON.parse(s) : INITIAL_COURSES; } 
+              try { const s = localStorage.getItem('alon_courses_v7'); return s ? JSON.parse(s) : INITIAL_COURSES; } 
               catch(e) { return INITIAL_COURSES; }
           });
           const [readings, setReadings] = useState(() => { 
-              try { const s = localStorage.getItem('alon_readings_v6'); return s ? JSON.parse(s) : INITIAL_READINGS; }
+              try { const s = localStorage.getItem('alon_readings_v7'); return s ? JSON.parse(s) : INITIAL_READINGS; }
               catch(e) { return INITIAL_READINGS; }
           });
           
+          // Sync States
+          const [syncKey, setSyncKey] = useState(() => localStorage.getItem('alon_sync_key') || '');
+          const [syncBin, setSyncBin] = useState(() => localStorage.getItem('alon_sync_bin') || '');
+
           const [isReadingModalOpen, setReadingModalOpen] = useState(false);
           const [isSettingsOpen, setIsSettingsOpen] = useState(false);
           const [editingCourse, setEditingCourse] = useState(null);
           const [newReading, setNewReading] = useState({ title: '', module: '', course: '' });
           
-          // Pomodoro State
           const [pomoTime, setPomoTime] = useState(25 * 60);
           const [isPomoRunning, setIsPomoRunning] = useState(false);
-          const [pomoMode, setPomoMode] = useState('focus'); // focus | break
+          const [pomoMode, setPomoMode] = useState('focus');
 
           const fileInputRef = useRef(null);
 
-          // --- EFFECTS ---
           useEffect(() => {
               if (darkMode) {
                   document.documentElement.classList.add('dark');
@@ -151,33 +150,27 @@
               localStorage.setItem('alon_theme', darkMode ? 'dark' : 'light');
           }, [darkMode]);
 
-          useEffect(() => { localStorage.setItem('alon_courses_v6', JSON.stringify(courses)); }, [courses]);
-          useEffect(() => { localStorage.setItem('alon_readings_v6', JSON.stringify(readings)); }, [readings]);
+          useEffect(() => { localStorage.setItem('alon_courses_v7', JSON.stringify(courses)); }, [courses]);
+          useEffect(() => { localStorage.setItem('alon_readings_v7', JSON.stringify(readings)); }, [readings]);
+          useEffect(() => { localStorage.setItem('alon_sync_key', syncKey); }, [syncKey]);
+          useEffect(() => { localStorage.setItem('alon_sync_bin', syncBin); }, [syncBin]);
 
           useEffect(() => { 
               if(toast) { const timer = setTimeout(() => setToast(null), 3000); return () => clearTimeout(timer); } 
           }, [toast]);
 
-          // Pomodoro Timer Logic
           useEffect(() => {
               let interval = null;
               if (isPomoRunning && pomoTime > 0) {
                   interval = setInterval(() => { setPomoTime(t => t - 1); }, 1000);
               } else if (isPomoRunning && pomoTime === 0) {
                   playBeep();
-                  if (pomoMode === 'focus') {
-                      setPomoMode('break');
-                      setPomoTime(5 * 60);
-                  } else {
-                      setPomoMode('focus');
-                      setPomoTime(25 * 60);
-                      setIsPomoRunning(false); // Stop after break
-                  }
+                  if (pomoMode === 'focus') { setPomoMode('break'); setPomoTime(5 * 60); } 
+                  else { setPomoMode('focus'); setPomoTime(25 * 60); setIsPomoRunning(false); }
               }
               return () => clearInterval(interval);
           }, [isPomoRunning, pomoTime, pomoMode]);
 
-          // --- COMPUTED ---
           const greeting = useMemo(() => {
               const hour = new Date().getHours();
               if (hour < 12) return "Good morning";
@@ -210,7 +203,6 @@
 
           const showToast = (msg, isError = false) => setToast({ msg, isError });
 
-          // --- ACTIONS ---
           const handleAddReading = () => {
               if (!newReading.title || !newReading.course) return;
               setReadings([...readings, { id: Date.now(), status: 'To Read', ...newReading }]);
@@ -228,7 +220,6 @@
               setEditingCourse(null); showToast("Course Updated"); 
           };
 
-          // Export JSON
           const exportData = () => {
               const data = { timestamp: new Date().toISOString(), courses, readings };
               const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -237,10 +228,8 @@
               link.href = url; link.download = 'alon_semester_backup.json';
               link.click(); URL.revokeObjectURL(url);
               showToast("Backup Downloaded");
-              setIsSettingsOpen(false);
           };
 
-          // Import JSON
           const importData = (e) => {
               const file = e.target.files[0];
               if (!file) return;
@@ -258,37 +247,38 @@
               e.target.value = null;
           };
 
-          // Generate iCal format for Google Calendar
-          const exportCalendar = () => {
-              let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Alon OS//EN\n";
-              
-              courses.forEach(c => {
-                  // Simplified ICS generation for visual schedule representation
-                  // Assuming current date is start of semester for demo purposes
-                  let days = [];
-                  if(c.day.includes("Mon")) days.push("MO");
-                  if(c.day.includes("Tue")) days.push("TU");
-                  if(c.day.includes("Wed")) days.push("WE");
-                  if(c.day.includes("Thu")) days.push("TH");
-                  if(c.day.includes("Fri")) days.push("FR");
-                  
-                  if(days.length > 0) {
-                      const [start, end] = c.time.split(" - ");
-                      ics += "BEGIN:VEVENT\n";
-                      ics += `SUMMARY:${c.code} - ${c.name}\n`;
-                      ics += `LOCATION:${c.venue}\n`;
-                      ics += `RRULE:FREQ=WEEKLY;BYDAY=${days.join(',')};COUNT=30\n`;
-                      ics += "END:VEVENT\n";
+          // --- CLOUD SYNC LOGIC ---
+          const pushToCloud = async () => {
+              if(!syncKey || !syncBin) return showToast("Enter API Key & Bin ID first.", true);
+              showToast("Pushing to cloud...");
+              try {
+                  const res = await fetch(`https://api.jsonbin.io/v3/b/${syncBin}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', 'X-Master-Key': syncKey },
+                      body: JSON.stringify({ courses, readings })
+                  });
+                  if(res.ok) showToast("Successfully Synced to Cloud!");
+                  else showToast("Sync failed. Check credentials.", true);
+              } catch(e) { showToast("Network error.", true); }
+          };
+
+          const pullFromCloud = async () => {
+              if(!syncKey || !syncBin) return showToast("Enter API Key & Bin ID first.", true);
+              showToast("Pulling from cloud...");
+              try {
+                  const res = await fetch(`https://api.jsonbin.io/v3/b/${syncBin}`, {
+                      headers: { 'X-Master-Key': syncKey }
+                  });
+                  if(res.ok) {
+                      const json = await res.json();
+                      const data = json.record;
+                      if(data.courses) setCourses(data.courses);
+                      if(data.readings) setReadings(data.readings);
+                      showToast("Data Restored from Cloud!");
+                  } else {
+                      showToast("Pull failed. Check credentials.", true);
                   }
-              });
-              
-              ics += "END:VCALENDAR";
-              const blob = new Blob([ics], { type: 'text/calendar' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url; link.download = 'Alon_Schedule.ics';
-              link.click(); URL.revokeObjectURL(url);
-              showToast("Calendar Exported");
+              } catch(e) { showToast("Network error.", true); }
           };
 
           const factoryReset = () => {
@@ -314,11 +304,7 @@
           return (
             <div className="min-h-screen flex flex-col md:flex-row text-slate-900 dark:text-slate-100 selection:bg-blue-200 dark:selection:bg-blue-900">
               
-              {/* RESPONSIVE NAVIGATION */}
-              <nav className="fixed z-40 flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-slate-200 dark:border-slate-800 transition-colors
-                              bottom-0 left-0 right-0 justify-around px-2 sm:px-4 py-2 sm:py-3 border-t shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)]
-                              md:top-0 md:w-64 md:flex-col md:justify-start md:border-t-0 md:border-r md:px-6 md:py-8 md:gap-2 md:shadow-none pb-safe">
-                  
+              <nav className="fixed z-40 flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-slate-200 dark:border-slate-800 transition-colors bottom-0 left-0 right-0 justify-around px-2 sm:px-4 py-2 sm:py-3 border-t shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.5)] md:top-0 md:w-64 md:flex-col md:justify-start md:border-t-0 md:border-r md:px-6 md:py-8 md:gap-2 md:shadow-none pb-safe">
                   <div className="hidden md:block w-full mb-8">
                       <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Alon OS</h1>
                       <div className="mt-2 inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
@@ -335,24 +321,18 @@
                   ].map(tab => (
                       <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
                           className={`flex flex-col md:flex-row items-center md:justify-start gap-1 md:gap-3 w-full px-2 py-2 md:px-4 md:py-3.5 rounded-xl md:rounded-2xl transition-all duration-200 relative
-                                      ${activeTab === tab.id 
-                                        ? 'text-blue-600 dark:text-blue-400 md:bg-blue-50 md:dark:bg-blue-900/20 md:border md:border-blue-100 md:dark:border-blue-800/50' 
-                                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 md:border md:border-transparent md:hover:bg-slate-50 md:dark:hover:bg-slate-800/50'}`}
+                                      ${activeTab === tab.id ? 'text-blue-600 dark:text-blue-400 md:bg-blue-50 md:dark:bg-blue-900/20 md:border md:border-blue-100 md:dark:border-blue-800/50' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 md:border md:border-transparent md:hover:bg-slate-50 md:dark:hover:bg-slate-800/50'}`}
                       >
                           <div className="relative">
                               <Icon path={tab.icon} className="w-6 h-6 md:w-5 md:h-5" />
-                              {tab.id === 'readings' && readings.filter(r => r.status === 'To Read').length > 0 && (
-                                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 md:-top-0.5 md:-right-0.5"></span>
-                              )}
+                              {tab.id === 'readings' && readings.filter(r => r.status === 'To Read').length > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 md:-top-0.5 md:-right-0.5"></span>}
                           </div>
                           <span className={`text-[10px] md:text-sm font-bold tracking-wide md:tracking-normal ${activeTab === tab.id ? 'md:font-black' : 'md:font-semibold'}`}>{tab.label}</span>
                       </button>
                   ))}
               </nav>
 
-              {/* MAIN CONTENT AREA */}
               <main className="flex-1 w-full md:pl-64 flex flex-col min-h-screen relative pb-24 md:pb-0">
-                  
                   <header className="px-5 py-4 md:px-8 md:py-6 sticky top-0 z-20 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/50 dark:border-slate-800 transition-colors flex justify-between items-center">
                       <div className="md:hidden flex flex-col justify-center">
                           <h1 className="text-xl font-black tracking-tight leading-tight">Alon OS</h1>
@@ -362,7 +342,6 @@
                           <h2 className="text-2xl font-bold capitalize tracking-tight text-slate-800 dark:text-slate-100">{activeTab}</h2>
                           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{greeting}, Alon.</p>
                       </div>
-
                       <div className="flex items-center gap-2">
                           <div className="md:hidden text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mr-1">QPI {qpi}</div>
                           <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-600 dark:text-yellow-400 transition-colors">
@@ -381,8 +360,6 @@
                   )}
 
                   <div className="p-4 md:p-8 flex-1 max-w-7xl mx-auto w-full">
-                    
-                    {/* DASHBOARD TAB */}
                     {activeTab === 'dashboard' && (
                       <div className="animate-fade-in space-y-6 md:space-y-8 md:max-w-4xl mx-auto">
                         <div className="grid grid-cols-2 gap-4">
@@ -396,19 +373,14 @@
                             </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 dark:from-indigo-900 dark:to-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-blue-500/20 dark:shadow-none relative overflow-hidden">
+                        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 dark:from-indigo-900 dark:to-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-blue-500/20 dark:shadow-none relative overflow-hidden transition-transform hover:scale-[1.01] duration-300">
                           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
                           <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                                <p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Up Next</p>
-                            </div>
+                            <div className="flex items-center gap-2 mb-2"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span><p className="text-blue-100 text-xs font-bold uppercase tracking-widest">Up Next</p></div>
                             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-1">SOCIO 192.1</h2>
                             <p className="text-blue-100 font-medium md:text-lg mb-8">Section B • Dr. Clamor</p>
                             <div className="flex items-center gap-3 bg-black/20 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                                <span className="text-xl">📍</span>
-                                <span className="font-mono font-bold text-lg md:text-xl tracking-tight">SOM 111</span>
-                                <span className="ml-auto text-xs md:text-sm font-black bg-white text-blue-900 px-3 py-1.5 rounded-lg shadow-sm">NOW</span>
+                                <span className="text-xl">📍</span><span className="font-mono font-bold text-lg md:text-xl tracking-tight">SOM 111</span><span className="ml-auto text-xs md:text-sm font-black bg-white text-blue-900 px-3 py-1.5 rounded-lg shadow-sm">NOW</span>
                             </div>
                           </div>
                         </div>
@@ -437,12 +409,10 @@
                       </div>
                     )}
 
-                    {/* CUTS TAB */}
                     {activeTab === 'cuts' && (
                       <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                           {courses.map(c => { 
-                              const pct = (c.cuts / c.maxCuts) * 100; 
-                              const isDanger = c.cuts >= c.maxCuts - 1; 
+                              const pct = (c.cuts / c.maxCuts) * 100; const isDanger = c.cuts >= c.maxCuts - 1; 
                               return (
                                   <div key={c.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
                                       <div className="flex justify-between items-start mb-5">
@@ -468,71 +438,36 @@
                       </div>
                     )}
 
-                    {/* READINGS TAB */}
                     {activeTab === 'readings' && (
                       <div className="animate-fade-in space-y-6">
                           <div className="flex justify-end md:justify-between items-center px-1">
                               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 hidden md:block">Manage your required readings across all subjects.</p>
-                              <button onClick={() => setReadingModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm font-bold px-5 py-2.5 rounded-full shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all">
-                                  <Icon path={icons.plus} className="w-4 h-4" /> ADD READING
-                              </button>
+                              <button onClick={() => setReadingModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm font-bold px-5 py-2.5 rounded-full shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all"><Icon path={icons.plus} className="w-4 h-4" /> ADD READING</button>
                           </div>
-                          
-                          {readings.length === 0 && (
-                              <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
-                                  <span className="text-4xl block mb-4">🏖️</span>
-                                  <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">All caught up!</h3>
-                              </div>
-                          )}
-                          
+                          {readings.length === 0 && <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700"><span className="text-4xl block mb-4">🏖️</span><h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">All caught up!</h3></div>}
                           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                               {sortedReadings.map(r => (
-                                  <div key={r.id} onClick={() => { 
-                                      const order = ['To Read', 'In Progress', 'Done']; 
-                                      setReadings(readings.map(x => x.id === r.id ? { ...x, status: order[(order.indexOf(r.status) + 1) % 3] } : x)); 
-                                  }} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex gap-4 active:scale-[0.98] transition-all cursor-pointer group relative shadow-sm hover:shadow-md">
-                                      <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 mt-0.5 flex items-center justify-center transition-all duration-300 ${ r.status === 'Done' ? 'bg-green-500 border-green-500 shadow-lg shadow-green-500/20' : r.status === 'In Progress' ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/30' : 'border-slate-300 dark:border-slate-600' }`}>
-                                          {r.status === 'Done' && <span className="text-white text-xs font-bold">✓</span>}
-                                      </div>
+                                  <div key={r.id} onClick={() => { const order = ['To Read', 'In Progress', 'Done']; setReadings(readings.map(x => x.id === r.id ? { ...x, status: order[(order.indexOf(r.status) + 1) % 3] } : x)); }} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex gap-4 active:scale-[0.98] transition-all cursor-pointer group relative shadow-sm hover:shadow-md">
+                                      <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 mt-0.5 flex items-center justify-center transition-all duration-300 ${ r.status === 'Done' ? 'bg-green-500 border-green-500 shadow-lg shadow-green-500/20' : r.status === 'In Progress' ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/30' : 'border-slate-300 dark:border-slate-600' }`}>{r.status === 'Done' && <span className="text-white text-xs font-bold">✓</span>}</div>
                                       <div className="flex-grow pr-8">
-                                          <div className="flex items-center gap-2 mb-1.5">
-                                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{r.course}</span>
-                                              <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
-                                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{r.module}</span>
-                                          </div>
+                                          <div className="flex items-center gap-2 mb-1.5"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{r.course}</span><span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{r.module}</span></div>
                                           <h3 className={`font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug mb-3 ${r.status === 'Done' ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>{r.title}</h3>
                                           <div className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${ r.status === 'Done' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/50' : r.status === 'In Progress' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600' }`}>{r.status}</div>
                                       </div>
-                                      <button onClick={(e) => deleteReading(r.id, e)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 md:opacity-100">
-                                          <Icon path={icons.trash} className="w-4 h-4" />
-                                      </button>
+                                      <button onClick={(e) => deleteReading(r.id, e)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 md:opacity-100"><Icon path={icons.trash} className="w-4 h-4" /></button>
                                   </div>
                               ))}
                           </div>
                       </div>
                     )}
 
-                    {/* FOCUS TAB (POMODORO) */}
                     {activeTab === 'focus' && (
                         <div className="animate-fade-in flex flex-col items-center justify-center min-h-[60vh] md:min-h-[70vh]">
-                            <div className={`w-72 h-72 md:w-96 md:h-96 rounded-full border-[8px] flex flex-col items-center justify-center relative shadow-2xl transition-colors duration-500
-                                            ${pomoMode === 'focus' ? 'border-blue-500 dark:border-blue-600 shadow-blue-500/20 bg-blue-50 dark:bg-blue-900/10' : 'border-green-500 dark:border-green-600 shadow-green-500/20 bg-green-50 dark:bg-green-900/10'}`}>
-                                
-                                <span className="text-sm md:text-base font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
-                                    {pomoMode === 'focus' ? 'Deep Work' : 'Break Time'}
-                                </span>
-                                
-                                <span className="text-6xl md:text-8xl font-black text-slate-900 dark:text-white font-mono-timer tracking-tighter">
-                                    {formatTime(pomoTime)}
-                                </span>
-
-                                <div className="absolute -bottom-6 flex gap-4">
-                                    <button onClick={() => setIsPomoRunning(!isPomoRunning)} className={`px-8 py-3 rounded-full font-black text-white shadow-lg transition-transform active:scale-95 ${isPomoRunning ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-900 dark:bg-blue-600 hover:opacity-90'}`}>
-                                        {isPomoRunning ? 'PAUSE' : 'START'}
-                                    </button>
-                                </div>
+                            <div className={`w-72 h-72 md:w-96 md:h-96 rounded-full border-[8px] flex flex-col items-center justify-center relative shadow-2xl transition-colors duration-500 ${pomoMode === 'focus' ? 'border-blue-500 dark:border-blue-600 shadow-blue-500/20 bg-blue-50 dark:bg-blue-900/10' : 'border-green-500 dark:border-green-600 shadow-green-500/20 bg-green-50 dark:bg-green-900/10'}`}>
+                                <span className="text-sm md:text-base font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">{pomoMode === 'focus' ? 'Deep Work' : 'Break Time'}</span>
+                                <span className="text-6xl md:text-8xl font-black text-slate-900 dark:text-white font-mono-timer tracking-tighter">{formatTime(pomoTime)}</span>
+                                <div className="absolute -bottom-6 flex gap-4"><button onClick={() => setIsPomoRunning(!isPomoRunning)} className={`px-8 py-3 rounded-full font-black text-white shadow-lg transition-transform active:scale-95 ${isPomoRunning ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-900 dark:bg-blue-600 hover:opacity-90'}`}>{isPomoRunning ? 'PAUSE' : 'START'}</button></div>
                             </div>
-
                             <div className="mt-16 flex gap-4">
                                 <button onClick={() => { setIsPomoRunning(false); setPomoMode('focus'); setPomoTime(25*60); }} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white uppercase">Reset Focus</button>
                                 <button onClick={() => { setIsPomoRunning(false); setPomoMode('break'); setPomoTime(5*60); }} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white uppercase">Skip to Break</button>
@@ -546,8 +481,22 @@
               {/* SETTINGS MODAL */}
               <Modal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} title="OS Settings">
                   <div className="space-y-6">
+                      
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800/50 flex flex-col gap-3">
+                          <div className="flex items-center gap-2 mb-1">
+                              <Icon path={icons.cloud} className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-800 dark:text-purple-300">Cloud Sync (Beta)</h4>
+                          </div>
+                          <input type="password" value={syncKey} onChange={e => setSyncKey(e.target.value)} placeholder="JSONBin.io API Key" className="w-full bg-white dark:bg-slate-900 p-3 rounded-lg text-sm border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500 outline-none" />
+                          <input type="text" value={syncBin} onChange={e => setSyncBin(e.target.value)} placeholder="Bin ID" className="w-full bg-white dark:bg-slate-900 p-3 rounded-lg text-sm border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500 outline-none" />
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                              <button onClick={pushToCloud} className="flex justify-center items-center gap-2 bg-purple-600 text-white p-3 rounded-lg font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-purple-500/20">Push <Icon path={icons.upload} className="w-4 h-4" /></button>
+                              <button onClick={pullFromCloud} className="flex justify-center items-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 p-3 rounded-lg font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition-all shadow-sm">Pull <Icon path={icons.download} className="w-4 h-4" /></button>
+                          </div>
+                      </div>
+
                       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 flex flex-col gap-3">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">Data Management</h4>
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">Local Data</h4>
                           <button onClick={exportData} className="w-full flex justify-between items-center bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 p-3 rounded-lg font-bold text-sm border border-slate-200 dark:border-slate-700 hover:border-blue-300 transition-colors shadow-sm">
                               <span>Export Backup (.json)</span><Icon path={icons.download} className="w-4 h-4" />
                           </button>
@@ -555,9 +504,6 @@
                               <span>Import Backup</span><Icon path={icons.upload} className="w-4 h-4" />
                               <input type="file" accept=".json" onChange={importData} ref={fileInputRef} className="hidden" />
                           </label>
-                          <button onClick={exportCalendar} className="w-full flex justify-between items-center bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 p-3 rounded-lg font-bold text-sm border border-slate-200 dark:border-slate-700 hover:border-blue-300 transition-colors shadow-sm">
-                              <span>Add Schedule to Google Calendar</span><Icon path={icons.calendar} className="w-4 h-4" />
-                          </button>
                       </div>
 
                       <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800/50 flex flex-col gap-3">
